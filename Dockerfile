@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/python-311:latest
 
 USER 0
-RUN dnf -y update --refresh && dnf clean all && rm -rf /var/cache/dnf
+RUN dnf -y update --refresh && (dnf -y remove krb5-devel || true) && dnf clean all && rm -rf /var/cache/dnf
 USER 1001
 
 WORKDIR /opt/app-root/src
