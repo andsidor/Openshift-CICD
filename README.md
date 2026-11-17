@@ -12,7 +12,7 @@ This project is a demo of a complete CI/CD pipeline on the OpenShift Developer S
 
 Flask API returning stock prices (Yahoo Finance public endpoint, no API key) with a GitOps-style CI/CD flow:
 
-GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest → buildah build → deploy.
+GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest + security scan (bandit, pip-audit) → buildah build → deploy.
 
 ### Endpoints
 
@@ -54,6 +54,10 @@ and resources removed from `k8s/` are pruned from the cluster
 
 Argo CD / Flux are not used: the OpenShift Developer Sandbox does not allow creating CRDs.
 
+### Security scanning
+
+The `security-scan` task runs in parallel with the tests and blocks the build on findings: `bandit` (static analysis of `app/`, medium+ severity) and `pip-audit` (known vulnerabilities in `requirements.txt`).
+
 ### Cleanup
 
 The `pipelinerun-cleanup` CronJob runs every hour and keeps only the 2 newest PipelineRuns.
@@ -69,7 +73,7 @@ Projekt to demonstracja kompletnego procesu CI/CD na OpenShift Developer Sandbox
 
 API we Flasku zwracające ceny akcji (publiczny endpoint Yahoo Finance, bez klucza API) z przepływem CI/CD w stylu GitOps:
 
-push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest → budowanie buildah → deploy.
+push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest + skan bezpieczeństwa (bandit, pip-audit) → budowanie buildah → deploy.
 
 ### Endpointy
 
@@ -110,6 +114,10 @@ a zasoby usunięte z `k8s/` znikają z klastra
 (Deployment, Service, Route, ImageStream, ConfigMap).
 
 Nie używamy Argo CD ani Flux: OpenShift Developer Sandbox nie pozwala tworzyć CRD.
+
+### Skanowanie bezpieczeństwa
+
+Zadanie `security-scan` działa równolegle z testami i blokuje build przy znaleziskach: `bandit` (analiza statyczna `app/`, poziom medium i wyżej) oraz `pip-audit` (znane podatności w `requirements.txt`).
 
 ### Sprzątanie
 
