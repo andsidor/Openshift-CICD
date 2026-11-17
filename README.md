@@ -12,14 +12,16 @@ This project is a demo of a complete CI/CD pipeline on the OpenShift Developer S
 
 Flask API returning stock prices (Yahoo Finance public endpoint, no API key) with a GitOps-style CI/CD flow:
 
-GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest + security scan (bandit, pip-audit) → buildah build → Trivy image scan → image tag + deploy.
+GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest + security scan (bandit, pip-audit) → buildah build → Trivy image scan → image tag → deploy (rollout check + auto rollback).
 
 ### Architecture
 
 ```mermaid
 flowchart LR
     Dev[Developer] -->|git push main| GH[GitHub]
+    Dev -->|pull request| GH
     GH -->|webhook| EL[EventListener]
+    EL -.->|PR: clone, test, security-scan only| CI[stock-api-ci-pipeline]
     EL --> C
     subgraph Tekton[OpenShift Pipelines]
         direction LR
@@ -29,7 +31,7 @@ flowchart LR
         S --> B
         B --> I["image-scan<br/>Trivy"]
         I --> TG[tag-image]
-        I --> D["deploy<br/>oc apply -k"]
+        TG --> D["deploy<br/>oc apply -k + rollout status<br/>undo on failure"]
     end
     B -->|push| REG[("ImageStream<br/>stock-api")]
     TG -->|tag sha| REG
@@ -56,7 +58,7 @@ Symbols are read from the external file [k8s/stocks.txt](k8s/stocks.txt) (one pe
 |------|---------|
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Application, tests and container image |
 | `k8s/` | Kustomize-managed manifests (ImageStream, Deployment, Service, Route) |
-| `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image → deploy (rollout check + rollback) |
 | `tekton/pipeline-pr.yaml` | CI-only pipeline for Pull Requests: clone → test + security-scan |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener and its Route |
 | `tekton/cleanup.yaml` | Hourly CronJob that deletes old PipelineRuns (keeps the last 2) |
@@ -108,14 +110,16 @@ Projekt to demonstracja kompletnego procesu CI/CD na OpenShift Developer Sandbox
 
 API we Flasku zwracające ceny akcji (publiczny endpoint Yahoo Finance, bez klucza API) z przepływem CI/CD w stylu GitOps:
 
-push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest + skan bezpieczeństwa (bandit, pip-audit) → budowanie buildah → skan obrazu Trivy → tag obrazu + deploy.
+push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest + skan bezpieczeństwa (bandit, pip-audit) → budowanie buildah → skan obrazu Trivy → tag obrazu → deploy (kontrola rolloutu + auto rollback).
 
 ### Architektura
 
 ```mermaid
 flowchart LR
     Dev[Developer] -->|git push main| GH[GitHub]
+    Dev -->|pull request| GH
     GH -->|webhook| EL[EventListener]
+    EL -.->|PR: clone, test, security-scan only| CI[stock-api-ci-pipeline]
     EL --> C
     subgraph Tekton[OpenShift Pipelines]
         direction LR
@@ -125,7 +129,7 @@ flowchart LR
         S --> B
         B --> I["image-scan<br/>Trivy"]
         I --> TG[tag-image]
-        I --> D["deploy<br/>oc apply -k"]
+        TG --> D["deploy<br/>oc apply -k + rollout status<br/>undo on failure"]
     end
     B -->|push| REG[("ImageStream<br/>stock-api")]
     TG -->|tag sha| REG
@@ -152,7 +156,7 @@ Symbole są czytane z zewnętrznego pliku [k8s/stocks.txt](k8s/stocks.txt) (jede
 |---------|------|
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Aplikacja, testy i obraz kontenera |
 | `k8s/` | Manifesty zarządzane przez Kustomize (ImageStream, Deployment, Service, Route) |
-| `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image → deploy (rollout check + rollback) |
 | `tekton/pipeline-pr.yaml` | Pipeline CI dla Pull Requestów: clone → test + security-scan |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener i jego Route |
 | `tekton/cleanup.yaml` | Co godzinę CronJob usuwa stare PipelineRuny (zostawia 2 ostatnie) |
@@ -228,7 +232,7 @@ Widoki z OpenShift Developer Sandbox (namespace `asidor23-dev`) pokazujące dzia
 | Screenshot | Comment |
 |---|---|
 | ![Pipeline overview](_files/Pipeline_overview.png) | Pipeline runs overview / przegląd przebiegów |
-| ![Pipeline](_files/Pipeline.png) | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| ![Pipeline](_files/Pipeline.png) | Pipeline: clone → test + security-scan → build → image-scan → tag-image → deploy (rollout check + rollback) |
 | ![Triggers](_files/Triggers.png) | Triggers: EventListener fired by the GitHub push webhook / wyzwalanie z webhooka GitHub |
 
 ### Access control / Uprawnienia
