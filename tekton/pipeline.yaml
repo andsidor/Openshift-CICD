@@ -83,7 +83,9 @@ spec:
               - {name: TRIVY_NO_PROGRESS, value: "true"}
             script: |
               export TRIVY_PASSWORD="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
-              trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 $(params.image)
+              # krb5-libs: fix only in RHEL 9.9, not yet in UBI repos (accepted risk)
+              printf '%s\n' CVE-2026-107364 CVE-2026-112315 CVE-2026-112316 CVE-2026-112317 CVE-2026-112318 CVE-2026-112319 CVE-2026-112320 CVE-2026-112321 CVE-2026-112322 CVE-2026-112323 CVE-2026-118380 CVE-2026-119079 CVE-2026-71199 CVE-2026-71200 > /tmp/.trivyignore
+              trivy image --ignorefile /tmp/.trivyignore --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 $(params.image)
     - name: tag-image
       runAfter: [image-scan]
       taskRef:
