@@ -6,6 +6,10 @@
 
 ## English
 
+### About the project
+
+This project is a demo of a complete CI/CD pipeline on the OpenShift Developer Sandbox. A small Flask service returns current stock prices from a public API. Every push to `main` on GitHub triggers a Tekton pipeline that tests the code, builds a container image and deploys it to OpenShift with no manual steps. Kubernetes manifests live in Git and are applied with Kustomize, so the repository always describes the state of the cluster. Old pipeline runs are cleaned up automatically.
+
 Flask API returning stock prices (Yahoo Finance public endpoint, no API key) with a GitOps-style CI/CD flow:
 
 GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest → buildah build → deploy.
@@ -52,6 +56,10 @@ Deleting a PipelineRun also removes its pods and workspace PVC.
 ---
 
 ## Polski
+
+### O projekcie
+
+Projekt to demonstracja kompletnego procesu CI/CD na OpenShift Developer Sandbox. Mała usługa we Flasku zwraca aktualne ceny akcji z publicznego API. Każdy push na `main` w GitHubie uruchamia pipeline Tekton, który testuje kod, buduje obraz kontenera i wdraża go na OpenShift bez ręcznych kroków. Manifesty Kubernetes są w Gicie i aplikowane przez Kustomize, więc repozytorium zawsze opisuje stan klastra. Stare przebiegi pipeline'u są sprzątane automatycznie.
 
 API we Flasku zwracające ceny akcji (publiczny endpoint Yahoo Finance, bez klucza API) z przepływem CI/CD w stylu GitOps:
 
