@@ -91,7 +91,7 @@ After `build`, Trivy scans the image (HIGH/CRITICAL, fixable only) and fails the
 ### Pull Request CI & rollback
 
 - Pull requests (`opened`, `synchronize`, `reopened`) trigger the lightweight `stock-api-ci-pipeline` ([tekton/pipeline-pr.yaml](tekton/pipeline-pr.yaml)): clone → pytest + security scan. No image build, no deployment. The webhook sends both `push` and `pull_request` events.
-- After `oc apply -k`, the deploy step waits for `oc rollout status` (60 s). On failure it runs `oc rollout undo deployment/stock-api` and fails the pipeline. Note: the image is deployed as `:latest`, so the undo restores the previous Deployment spec, not necessarily a different image.
+- After `oc apply -k`, the deploy step waits for `oc rollout status` (60 s). On failure it runs `oc rollout undo deployment/stock-api` and fails the pipeline. The Deployment uses the immutable `stock-api:<git-commit-sha>` image (deploy runs after `tag-image`), so the undo restores exactly the previous container image.
 
 ### Cleanup
 
@@ -187,7 +187,7 @@ Po `build` Trivy skanuje obraz (HIGH/CRITICAL, tylko z poprawką) i przerywa pip
 ### Pull Request CI i rollback
 
 - Pull requesty (`opened`, `synchronize`, `reopened`) uruchamiają lekki pipeline `stock-api-ci-pipeline` ([tekton/pipeline-pr.yaml](tekton/pipeline-pr.yaml)): clone → pytest + skan bezpieczeństwa. Bez budowania obrazu i wdrożenia. Webhook wysyła zdarzenia `push` i `pull_request`.
-- Po `oc apply -k` krok deploy czeka na `oc rollout status` (60 s). Przy błędzie wykonuje `oc rollout undo deployment/stock-api` i kończy pipeline porażką. Uwaga: obraz jest wdrażany jako `:latest`, więc undo przywraca poprzednią specyfikację Deploymentu, niekoniecznie inny obraz.
+- Po `oc apply -k` krok deploy czeka na `oc rollout status` (60 s). Przy błędzie wykonuje `oc rollout undo deployment/stock-api` i kończy pipeline porażką. Deployment używa niezmiennego obrazu `stock-api:<sha-commitu>` (deploy działa po `tag-image`), więc undo przywraca dokładnie poprzedni obraz kontenera.
 
 ### Sprzątanie
 

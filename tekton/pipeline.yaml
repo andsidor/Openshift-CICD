@@ -99,7 +99,7 @@ spec:
           value: |
             oc tag stock-api:latest stock-api:$(tasks.clone.results.COMMIT)
     - name: deploy
-      runAfter: [image-scan]
+      runAfter: [tag-image]
       taskRef:
         resolver: cluster
         params:
@@ -111,8 +111,8 @@ spec:
       params:
         - name: SCRIPT
           value: |
+            sed -i 's#stock-api:latest#stock-api:$(tasks.clone.results.COMMIT)#' k8s/app.yaml
             oc apply -k k8s/ --prune -l gitops=managed --prune-allowlist=core/v1/ConfigMap --prune-allowlist=apps/v1/Deployment --prune-allowlist=core/v1/Service --prune-allowlist=route.openshift.io/v1/Route --prune-allowlist=image.openshift.io/v1/ImageStream
-            oc rollout restart deployment/stock-api
             if ! oc rollout status deployment/stock-api --timeout=60s; then
               echo "Rollout failed - rolling back"
               oc rollout undo deployment/stock-api
