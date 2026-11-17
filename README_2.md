@@ -57,13 +57,14 @@ Symbols are read from the external file [k8s/stocks.txt](k8s/stocks.txt) (one pe
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Application, tests and container image |
 | `k8s/` | Kustomize-managed manifests (ImageStream, Deployment, Service, Route) |
 | `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| `tekton/pipeline-pr.yaml` | CI-only pipeline for Pull Requests: clone → test + security-scan |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener and its Route |
 | `tekton/cleanup.yaml` | Hourly CronJob that deletes old PipelineRuns (keeps the last 2) |
 
 ### Setup (namespace `asidor23-dev`)
 
 ```
-oc apply -f tekton/pipeline.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
+oc apply -f tekton/pipeline.yaml -f tekton/pipeline-pr.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
 oc create secret generic github-webhook-secret --from-literal=secret=<random>
 ```
 
@@ -152,13 +153,14 @@ Symbole są czytane z zewnętrznego pliku [k8s/stocks.txt](k8s/stocks.txt) (jede
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Aplikacja, testy i obraz kontenera |
 | `k8s/` | Manifesty zarządzane przez Kustomize (ImageStream, Deployment, Service, Route) |
 | `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| `tekton/pipeline-pr.yaml` | Pipeline CI dla Pull Requestów: clone → test + security-scan |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener i jego Route |
 | `tekton/cleanup.yaml` | Co godzinę CronJob usuwa stare PipelineRuny (zostawia 2 ostatnie) |
 
 ### Instalacja (namespace `asidor23-dev`)
 
 ```
-oc apply -f tekton/pipeline.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
+oc apply -f tekton/pipeline.yaml -f tekton/pipeline-pr.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
 oc create secret generic github-webhook-secret --from-literal=secret=<losowy>
 ```
 

@@ -57,13 +57,14 @@ Symbols are read from the external file [k8s/stocks.txt](k8s/stocks.txt) (one pe
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Application, tests and container image |
 | `k8s/` | Kustomize-managed manifests (ImageStream, Deployment, Service, Route) |
 | `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| `tekton/pipeline-pr.yaml` | CI-only pipeline for Pull Requests: clone → test + security-scan |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener and its Route |
 | `tekton/cleanup.yaml` | Hourly CronJob that deletes old PipelineRuns (keeps the last 2) |
 
 ### Setup (namespace `asidor23-dev`)
 
 ```
-oc apply -f tekton/pipeline.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
+oc apply -f tekton/pipeline.yaml -f tekton/pipeline-pr.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
 oc create secret generic github-webhook-secret --from-literal=secret=<random>
 ```
 
@@ -86,6 +87,11 @@ The `security-scan` task runs in parallel with the tests and blocks the build on
 ### Image scan & registry
 
 After `build`, Trivy scans the image (HIGH/CRITICAL, fixable only) and fails the pipeline on findings. The `Dockerfile` updates OS packages and `setuptools`. Passing images are tagged in the internal OpenShift registry as `stock-api:latest` and `stock-api:<git-commit-sha>` (`oc get is stock-api`). The `krb5-libs` CVEs (fix only in RHEL 9.9) are explicitly accepted in `tekton/pipeline.yaml`.
+
+### Pull Request CI & rollback
+
+- Pull requests (`opened`, `synchronize`, `reopened`) trigger the lightweight `stock-api-ci-pipeline` ([tekton/pipeline-pr.yaml](tekton/pipeline-pr.yaml)): clone → pytest + security scan. No image build, no deployment. The webhook sends both `push` and `pull_request` events.
+- After `oc apply -k`, the deploy step waits for `oc rollout status` (60 s). On failure it runs `oc rollout undo deployment/stock-api` and fails the pipeline. Note: the image is deployed as `:latest`, so the undo restores the previous Deployment spec, not necessarily a different image.
 
 ### Cleanup
 
@@ -147,13 +153,14 @@ Symbole są czytane z zewnętrznego pliku [k8s/stocks.txt](k8s/stocks.txt) (jede
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Aplikacja, testy i obraz kontenera |
 | `k8s/` | Manifesty zarządzane przez Kustomize (ImageStream, Deployment, Service, Route) |
 | `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
+| `tekton/pipeline-pr.yaml` | Pipeline CI dla Pull Requestów: clone → test + security-scan |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener i jego Route |
 | `tekton/cleanup.yaml` | Co godzinę CronJob usuwa stare PipelineRuny (zostawia 2 ostatnie) |
 
 ### Instalacja (namespace `asidor23-dev`)
 
 ```
-oc apply -f tekton/pipeline.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
+oc apply -f tekton/pipeline.yaml -f tekton/pipeline-pr.yaml -f tekton/trigger.yaml -f tekton/cleanup.yaml
 oc create secret generic github-webhook-secret --from-literal=secret=<losowy>
 ```
 
@@ -176,6 +183,11 @@ Zadanie `security-scan` działa równolegle z testami i blokuje build przy znale
 ### Skan obrazu i rejestr
 
 Po `build` Trivy skanuje obraz (HIGH/CRITICAL, tylko z poprawką) i przerywa pipeline przy znaleziskach. `Dockerfile` aktualizuje pakiety systemowe i `setuptools`. Obrazy po skanie są tagowane w wewnętrznym rejestrze OpenShift jako `stock-api:latest` i `stock-api:<sha-commitu>` (`oc get is stock-api`). CVE `krb5-libs` (poprawka tylko w RHEL 9.9) są świadomie zaakceptowane w `tekton/pipeline.yaml`.
+
+### Pull Request CI i rollback
+
+- Pull requesty (`opened`, `synchronize`, `reopened`) uruchamiają lekki pipeline `stock-api-ci-pipeline` ([tekton/pipeline-pr.yaml](tekton/pipeline-pr.yaml)): clone → pytest + skan bezpieczeństwa. Bez budowania obrazu i wdrożenia. Webhook wysyła zdarzenia `push` i `pull_request`.
+- Po `oc apply -k` krok deploy czeka na `oc rollout status` (60 s). Przy błędzie wykonuje `oc rollout undo deployment/stock-api` i kończy pipeline porażką. Uwaga: obraz jest wdrażany jako `:latest`, więc undo przywraca poprzednią specyfikację Deploymentu, niekoniecznie inny obraz.
 
 ### Sprzątanie
 
