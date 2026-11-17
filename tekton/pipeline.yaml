@@ -84,6 +84,18 @@ spec:
             script: |
               export TRIVY_PASSWORD="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
               trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 $(params.image)
+    - name: tag-image
+      runAfter: [image-scan]
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind, value: task}
+          - {name: name, value: openshift-client}
+          - {name: namespace, value: openshift-pipelines}
+      params:
+        - name: SCRIPT
+          value: |
+            oc tag stock-api:latest stock-api:$(tasks.clone.results.commit)
     - name: deploy
       runAfter: [image-scan]
       taskRef:
