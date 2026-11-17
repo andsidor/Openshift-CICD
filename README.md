@@ -14,6 +14,31 @@ Flask API returning stock prices (Yahoo Finance public endpoint, no API key) wit
 
 GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest + security scan (bandit, pip-audit) → buildah build → Trivy image scan → image tag + deploy.
 
+### Architecture
+
+```mermaid
+flowchart LR
+    Dev[Developer] -->|git push main| GH[GitHub]
+    GH -->|webhook| EL[EventListener]
+    EL --> C
+    subgraph Tekton[OpenShift Pipelines]
+        direction LR
+        C[clone] --> T[test]
+        C --> S["security-scan<br/>bandit, pip-audit"]
+        T --> B["build<br/>buildah"]
+        S --> B
+        B --> I["image-scan<br/>Trivy"]
+        I --> TG[tag-image]
+        I --> D["deploy<br/>oc apply -k"]
+    end
+    B -->|push| REG[("ImageStream<br/>stock-api")]
+    TG -->|tag sha| REG
+    D --> APP["Deployment + Service + Route"]
+    REG --> APP
+    CM["k8s/stocks.txt<br/>ConfigMap"] --> APP
+    APP -->|/prices| Y[Yahoo Finance]
+```
+
 ### Endpoints
 
 - `GET /price/<symbol>` e.g. `/price/AAPL`
@@ -78,6 +103,31 @@ Projekt to demonstracja kompletnego procesu CI/CD na OpenShift Developer Sandbox
 API we Flasku zwracające ceny akcji (publiczny endpoint Yahoo Finance, bez klucza API) z przepływem CI/CD w stylu GitOps:
 
 push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest + skan bezpieczeństwa (bandit, pip-audit) → budowanie buildah → skan obrazu Trivy → tag obrazu + deploy.
+
+### Architektura
+
+```mermaid
+flowchart LR
+    Dev[Developer] -->|git push main| GH[GitHub]
+    GH -->|webhook| EL[EventListener]
+    EL --> C
+    subgraph Tekton[OpenShift Pipelines]
+        direction LR
+        C[clone] --> T[test]
+        C --> S["security-scan<br/>bandit, pip-audit"]
+        T --> B["build<br/>buildah"]
+        S --> B
+        B --> I["image-scan<br/>Trivy"]
+        I --> TG[tag-image]
+        I --> D["deploy<br/>oc apply -k"]
+    end
+    B -->|push| REG[("ImageStream<br/>stock-api")]
+    TG -->|tag sha| REG
+    D --> APP["Deployment + Service + Route"]
+    REG --> APP
+    CM["k8s/stocks.txt<br/>ConfigMap"] --> APP
+    APP -->|/prices| Y[Yahoo Finance]
+```
 
 ### Endpointy
 
