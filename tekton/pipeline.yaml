@@ -1,0 +1,68 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: stock-api-pipeline
+spec:
+  params:
+    - name: git-url
+    - name: git-revision
+      default: main
+    - name: image
+      default: image-registry.openshift-image-registry.svc:5000/asidor23-dev/stock-api:latest
+  workspaces:
+    - name: shared
+  tasks:
+    - name: clone
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind, value: task}
+          - {name: name, value: git-clone}
+          - {name: namespace, value: openshift-pipelines}
+      workspaces:
+        - {name: output, workspace: shared}
+      params:
+        - {name: URL, value: $(params.git-url)}
+        - {name: REVISION, value: $(params.git-revision)}
+    - name: test
+      runAfter: [clone]
+      workspaces:
+        - {name: shared, workspace: shared}
+      taskSpec:
+        workspaces:
+          - name: shared
+        steps:
+          - name: pytest
+            image: registry.access.redhat.com/ubi9/python-311:latest
+            workingDir: $(workspaces.shared.path)
+            script: |
+              pip install --user -r requirements.txt pytest
+              python -m pytest -q
+    - name: build
+      runAfter: [test]
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind, value: task}
+          - {name: name, value: buildah}
+          - {name: namespace, value: openshift-pipelines}
+      workspaces:
+        - {name: source, workspace: shared}
+      params:
+        - {name: IMAGE, value: $(params.image)}
+    - name: deploy
+      runAfter: [build]
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind, value: task}
+          - {name: name, value: openshift-client}
+          - {name: namespace, value: openshift-pipelines}
+      workspaces:
+        - {name: manifest-dir, workspace: shared}
+      params:
+        - name: SCRIPT
+          value: |
+            oc apply -f k8s/
+            oc rollout restart deployment/stock-api
+            oc rollout status deployment/stock-api --timeout=180s
