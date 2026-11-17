@@ -95,7 +95,7 @@ spec:
       params:
         - name: SCRIPT
           value: |
-            oc tag stock-api:latest stock-api:$(tasks.clone.results.commit)
+            oc tag stock-api:latest stock-api:$(tasks.clone.results.COMMIT)
     - name: deploy
       runAfter: [image-scan]
       taskRef:
