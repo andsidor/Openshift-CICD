@@ -227,6 +227,14 @@ Widoki z OpenShift Developer Sandbox (namespace `asidor23-dev`) pokazujące dzia
 | ![Role](_files/Role.png) | Role allowing cleanup of PipelineRuns / rola do sprzątania |
 | ![Role binding](_files/Role_binding.png) | RoleBinding for the cleanup role / powiązanie roli |
 
+### Project / Projekt
+
+| Screenshot | Comment |
+|---|---|
+| ![Project overview](_files/Project_overview.png) | Project overview / przegląd projektu |
+| ![Project details](_files/Project_details.png) | Project details / szczegóły projektu |
+| ![Project RoleBinding](_files/Project_RoleBinding.png) | Project role bindings / powiązania ról w projekcie |
+
 ### Monitoring / Monitoring
 
 | Screenshot | Comment |
