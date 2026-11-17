@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: stock-api-ci-pipeline
+spec:
+  params:
+    - name: git-url
+    - name: git-revision
+  workspaces:
+    - name: shared
+  tasks:
+    - name: clone
+      taskRef:
+        resolver: cluster
+        params:
+          - {name: kind, value: task}
+          - {name: name, value: git-clone}
+          - {name: namespace, value: openshift-pipelines}
+      workspaces:
+        - {name: output, workspace: shared}
+      params:
+        - {name: URL, value: $(params.git-url)}
+        - {name: REVISION, value: $(params.git-revision)}
+    - name: test
+      runAfter: [clone]
+      workspaces:
+        - {name: shared, workspace: shared}
+      taskSpec:
+        workspaces:
+          - name: shared
+        steps:
+          - name: pytest
+            image: registry.access.redhat.com/ubi9/python-311:latest
+            workingDir: $(workspaces.shared.path)
+            script: |
+              pip install -r requirements.txt pytest
+              python -m pytest -q
+    - name: security-scan
+      runAfter: [clone]
+      workspaces:
+        - {name: shared, workspace: shared}
+      taskSpec:
+        workspaces:
+          - name: shared
+        steps:
+          - name: bandit-sast
+            image: registry.access.redhat.com/ubi9/python-311:latest
+            workingDir: $(workspaces.shared.path)
+            script: |
+              pip install bandit
+              bandit -r app -ll
+          - name: pip-audit-dependencies
+            image: registry.access.redhat.com/ubi9/python-311:latest
+            workingDir: $(workspaces.shared.path)
+            script: |
+              pip install pip-audit
+              pip-audit -r requirements.txt
