@@ -12,7 +12,7 @@ This project is a demo of a complete CI/CD pipeline on the OpenShift Developer S
 
 Flask API returning stock prices (Yahoo Finance public endpoint, no API key) with a GitOps-style CI/CD flow:
 
-GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest + security scan (bandit, pip-audit) → buildah build → deploy.
+GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → pytest + security scan (bandit, pip-audit) → buildah build → Trivy image scan → image tag + deploy.
 
 ### Endpoints
 
@@ -31,7 +31,7 @@ Symbols are read from the external file [k8s/stocks.txt](k8s/stocks.txt) (one pe
 |------|---------|
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Application, tests and container image |
 | `k8s/` | Kustomize-managed manifests (ImageStream, Deployment, Service, Route) |
-| `tekton/pipeline.yaml` | Pipeline: clone → test → build → deploy |
+| `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener and its Route |
 | `tekton/cleanup.yaml` | Hourly CronJob that deletes old PipelineRuns (keeps the last 2) |
 
@@ -58,6 +58,10 @@ Argo CD / Flux are not used: the OpenShift Developer Sandbox does not allow crea
 
 The `security-scan` task runs in parallel with the tests and blocks the build on findings: `bandit` (static analysis of `app/`, medium+ severity) and `pip-audit` (known vulnerabilities in `requirements.txt`).
 
+### Image scan & registry
+
+After `build`, Trivy scans the image (HIGH/CRITICAL, fixable only) and fails the pipeline on findings. The `Dockerfile` updates OS packages and `setuptools`. Passing images are tagged in the internal OpenShift registry as `stock-api:latest` and `stock-api:<git-commit-sha>` (`oc get is stock-api`). The `krb5-libs` CVEs (fix only in RHEL 9.9) are explicitly accepted in `tekton/pipeline.yaml`.
+
 ### Cleanup
 
 The `pipelinerun-cleanup` CronJob runs every hour and keeps only the 2 newest PipelineRuns.
@@ -73,7 +77,7 @@ Projekt to demonstracja kompletnego procesu CI/CD na OpenShift Developer Sandbox
 
 API we Flasku zwracające ceny akcji (publiczny endpoint Yahoo Finance, bez klucza API) z przepływem CI/CD w stylu GitOps:
 
-push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest + skan bezpieczeństwa (bandit, pip-audit) → budowanie buildah → deploy.
+push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone → pytest + skan bezpieczeństwa (bandit, pip-audit) → budowanie buildah → skan obrazu Trivy → tag obrazu + deploy.
 
 ### Endpointy
 
@@ -92,7 +96,7 @@ Symbole są czytane z zewnętrznego pliku [k8s/stocks.txt](k8s/stocks.txt) (jede
 |---------|------|
 | `app/`, `tests/`, `requirements.txt`, `Dockerfile` | Aplikacja, testy i obraz kontenera |
 | `k8s/` | Manifesty zarządzane przez Kustomize (ImageStream, Deployment, Service, Route) |
-| `tekton/pipeline.yaml` | Pipeline: clone → test → build → deploy |
+| `tekton/pipeline.yaml` | Pipeline: clone → test + security-scan → build → image-scan → tag-image + deploy |
 | `tekton/trigger.yaml` | TriggerBinding, TriggerTemplate, EventListener i jego Route |
 | `tekton/cleanup.yaml` | Co godzinę CronJob usuwa stare PipelineRuny (zostawia 2 ostatnie) |
 
@@ -119,12 +123,12 @@ Nie używamy Argo CD ani Flux: OpenShift Developer Sandbox nie pozwala tworzyć 
 
 Zadanie `security-scan` działa równolegle z testami i blokuje build przy znaleziskach: `bandit` (analiza statyczna `app/`, poziom medium i wyżej) oraz `pip-audit` (znane podatności w `requirements.txt`).
 
+### Skan obrazu i rejestr
+
+Po `build` Trivy skanuje obraz (HIGH/CRITICAL, tylko z poprawką) i przerywa pipeline przy znaleziskach. `Dockerfile` aktualizuje pakiety systemowe i `setuptools`. Obrazy po skanie są tagowane w wewnętrznym rejestrze OpenShift jako `stock-api:latest` i `stock-api:<sha-commitu>` (`oc get is stock-api`). CVE `krb5-libs` (poprawka tylko w RHEL 9.9) są świadomie zaakceptowane w `tekton/pipeline.yaml`.
+
 ### Sprzątanie
 
 CronJob `pipelinerun-cleanup` działa co godzinę i zostawia tylko 2 najnowsze PipelineRuny.
 Usunięcie PipelineRuna usuwa też jego pody i PVC workspace'u.
 
-## Image scan & registry / Skan obrazu i rejestr
-
-- EN: After `build`, Trivy scans the image (HIGH/CRITICAL, fixable only) and fails the pipeline on findings. Passing images are tagged in the internal OpenShift registry as `stock-api:latest` and `stock-api:<git-commit-sha>` (`oc get is stock-api`). The `krb5-libs` CVEs (fix only in RHEL 9.9) are explicitly accepted in the pipeline.
-- PL: Po `build` Trivy skanuje obraz (HIGH/CRITICAL, tylko z poprawką) i przerywa pipeline przy błędach. Obrazy po skanie są tagowane w wewnętrznym rejestrze OpenShift jako `stock-api:latest` i `stock-api:<sha-commitu>` (`oc get is stock-api`). CVE `krb5-libs` (poprawka tylko w RHEL 9.9) są świadomie zaakceptowane w pipeline.
