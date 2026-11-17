@@ -123,3 +123,8 @@ Zadanie `security-scan` działa równolegle z testami i blokuje build przy znale
 
 CronJob `pipelinerun-cleanup` działa co godzinę i zostawia tylko 2 najnowsze PipelineRuny.
 Usunięcie PipelineRuna usuwa też jego pody i PVC workspace'u.
+
+## Image scan & registry / Skan obrazu i rejestr
+
+- EN: After `build`, Trivy scans the image (HIGH/CRITICAL, fixable only) and fails the pipeline on findings. Passing images are tagged in the internal OpenShift registry as `stock-api:latest` and `stock-api:<git-commit-sha>` (`oc get is stock-api`). The `krb5-libs` CVEs (fix only in RHEL 9.9) are explicitly accepted in the pipeline.
+- PL: Po `build` Trivy skanuje obraz (HIGH/CRITICAL, tylko z poprawką) i przerywa pipeline przy błędach. Obrazy po skanie są tagowane w wewnętrznym rejestrze OpenShift jako `stock-api:latest` i `stock-api:<sha-commitu>` (`oc get is stock-api`). CVE `krb5-libs` (poprawka tylko w RHEL 9.9) są świadomie zaakceptowane w pipeline.
