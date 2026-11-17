@@ -1,0 +1,45 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pipelinerun-cleaner
+rules:
+  - apiGroups: [tekton.dev]
+    resources: [pipelineruns]
+    verbs: [list, get, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipelinerun-cleaner
+subjects:
+  - kind: ServiceAccount
+    name: pipeline
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pipelinerun-cleaner
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pipelinerun-cleanup
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: pipeline
+          restartPolicy: Never
+          containers:
+            - name: cleanup
+              image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  oc get pipelinerun --sort-by=.metadata.creationTimestamp -o name \
+                    | head -n -2 | xargs -r oc delete
