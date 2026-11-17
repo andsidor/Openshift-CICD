@@ -59,7 +59,7 @@ spec:
           - {name: name, value: openshift-client}
           - {name: namespace, value: openshift-pipelines}
       workspaces:
-        - {name: manifest-dir, workspace: shared}
+        - {name: manifest_dir, workspace: shared}
       params:
         - name: SCRIPT
           value: |
