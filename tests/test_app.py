@@ -47,3 +47,4 @@ def test_prices(tmp_path, monkeypatch):
 def test_prices_missing_file(monkeypatch):
     monkeypatch.setattr("app.app.STOCKS_FILE", "/nonexistent")
     assert app.test_client().get("/prices").status_code == 500
+
