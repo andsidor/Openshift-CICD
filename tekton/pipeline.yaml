@@ -70,8 +70,22 @@ spec:
         - {name: source, workspace: shared}
       params:
         - {name: IMAGE, value: $(params.image)}
-    - name: deploy
+    - name: image-scan
       runAfter: [build]
+      taskSpec:
+        steps:
+          - name: trivy
+            image: ghcr.io/aquasecurity/trivy:latest
+            env:
+              - {name: TRIVY_CACHE_DIR, value: /tmp/trivy}
+              - {name: TRIVY_USERNAME, value: pipeline}
+              - {name: TRIVY_INSECURE, value: "true"}
+              - {name: TRIVY_NO_PROGRESS, value: "true"}
+            script: |
+              export TRIVY_PASSWORD="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+              trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 $(params.image)
+    - name: deploy
+      runAfter: [image-scan]
       taskRef:
         resolver: cluster
         params:
