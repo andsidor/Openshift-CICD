@@ -63,6 +63,6 @@ spec:
       params:
         - name: SCRIPT
           value: |
-            oc apply -k k8s/ --prune -l gitops=managed --prune-allowlist=apps/v1/Deployment --prune-allowlist=core/v1/Service --prune-allowlist=route.openshift.io/v1/Route --prune-allowlist=image.openshift.io/v1/ImageStream
+            oc apply -k k8s/ --prune -l gitops=managed --prune-allowlist=core/v1/ConfigMap --prune-allowlist=apps/v1/Deployment --prune-allowlist=core/v1/Service --prune-allowlist=route.openshift.io/v1/Route --prune-allowlist=image.openshift.io/v1/ImageStream
             oc rollout restart deployment/stock-api
             oc rollout status deployment/stock-api --timeout=180s

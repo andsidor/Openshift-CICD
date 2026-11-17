@@ -22,6 +22,12 @@ spec:
           image: image-registry.openshift-image-registry.svc:5000/asidor23-dev/stock-api:latest
           ports:
             - containerPort: 8080
+          env:
+            - name: STOCKS_FILE
+              value: /config/stocks.txt
+          volumeMounts:
+            - name: stocks
+              mountPath: /config
           readinessProbe:
             httpGet:
               path: /healthz
@@ -37,6 +43,10 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+      volumes:
+        - name: stocks
+          configMap:
+            name: stocks
 ---
 apiVersion: v1
 kind: Service

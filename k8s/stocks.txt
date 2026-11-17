@@ -1,0 +1,6 @@
+# One ticker symbol per line (Yahoo Finance format). Lines starting with # are ignored.
+AAPL
+MSFT
+GOOGL
+AMZN
+TSLA

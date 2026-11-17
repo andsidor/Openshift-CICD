@@ -17,7 +17,13 @@ GitHub push to `main` → webhook → OpenShift Pipelines (Tekton): clone → py
 ### Endpoints
 
 - `GET /price/<symbol>` e.g. `/price/AAPL`
+- `GET /prices` prices for all symbols from `k8s/stocks.txt`
+- `GET /stocks` list of configured symbols
 - `GET /healthz`
+
+### Stock list
+
+Symbols are read from the external file [k8s/stocks.txt](k8s/stocks.txt) (one per line, `#` comments allowed). Kustomize turns it into a ConfigMap mounted at `/config/stocks.txt`; edit the file and push to `main` to change the list - the pipeline redeploys automatically.
 
 ### Repository layout
 
@@ -44,7 +50,7 @@ Then add a GitHub webhook (content type `application/json`, event `push`) pointi
 Git is the source of truth for the cluster state. The deploy step runs
 `oc apply -k k8s/ --prune -l gitops=managed`, so every commit to `main` is applied
 and resources removed from `k8s/` are pruned from the cluster
-(Deployment, Service, Route, ImageStream).
+(Deployment, Service, Route, ImageStream, ConfigMap).
 
 Argo CD / Flux are not used: the OpenShift Developer Sandbox does not allow creating CRDs.
 
@@ -68,7 +74,13 @@ push na `main` w GitHubie → webhook → OpenShift Pipelines (Tekton): clone �
 ### Endpointy
 
 - `GET /price/<symbol>` np. `/price/AAPL`
+- `GET /prices` ceny wszystkich symboli z `k8s/stocks.txt`
+- `GET /stocks` lista skonfigurowanych symboli
 - `GET /healthz`
+
+### Lista akcji
+
+Symbole są czytane z zewnętrznego pliku [k8s/stocks.txt](k8s/stocks.txt) (jeden w linii, komentarze `#` dozwolone). Kustomize zamienia go na ConfigMap montowany w `/config/stocks.txt`; zmień plik i zrób push na `main`, a pipeline sam wdroży nową listę.
 
 ### Struktura repozytorium
 
@@ -95,7 +107,7 @@ Następnie dodaj webhook w GitHubie (content type `application/json`, zdarzenie 
 Git jest źródłem prawdy o stanie klastra. Krok deploy wykonuje
 `oc apply -k k8s/ --prune -l gitops=managed`, więc każdy commit na `main` jest aplikowany,
 a zasoby usunięte z `k8s/` znikają z klastra
-(Deployment, Service, Route, ImageStream).
+(Deployment, Service, Route, ImageStream, ConfigMap).
 
 Nie używamy Argo CD ani Flux: OpenShift Developer Sandbox nie pozwala tworzyć CRD.
 

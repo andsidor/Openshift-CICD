@@ -7,3 +7,7 @@ labels:
       gitops: managed
 resources:
   - app.yaml
+configMapGenerator:
+  - name: stocks
+    files:
+      - stocks.txt
